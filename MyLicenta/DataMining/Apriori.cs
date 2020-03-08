@@ -21,7 +21,7 @@ namespace MyLicenta.DataMining
 
         public IDictionary<string, double> AssociateDiseases(string symptoms)
         {
-            IDictionary<string, double> predictedDiseases = new Dictionary<string, double>();
+            IDictionary<string, double> predictedDiseases = new Dictionary<string, double>(); 
 
             int supportCount = 2;
             GenerateLikelihoods(supportCount);
@@ -51,10 +51,10 @@ namespace MyLicenta.DataMining
 
             RemoveUnsupportedSets(L1, infrequentItemsets, supportCount);
             
+            int itemsetSize = 2;
             bool emptyCandidate = L1.SetsFrequency.Count() == 0;
 
             frequentItemsets.Add(L1);
-            int itemsetSize = 2;
 
             while (!emptyCandidate)        
             {
@@ -145,6 +145,7 @@ namespace MyLicenta.DataMining
             }
         }
     }
+
     public class Itemsets
     {
         public IDictionary<ISet<int>, int> SetsFrequency { get; set; }
