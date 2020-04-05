@@ -15,6 +15,7 @@ namespace MyLicenta.FileProcessing
         public void DeduceDiseaseProbabilities();
         public void DeduceSymptomsProbabilities();
         public void DeduceCoocurrenceProbability();
+        public void SymptomsConditionedProbability();
     }
 
     public class FileParser : IFileParser
@@ -28,7 +29,7 @@ namespace MyLicenta.FileProcessing
 
         public void SeparateDS()
         {
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using StreamReader reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
             IList<string> diseaseList = new List<string>();
             IList<string> symptomsList = new List<string>();
 
@@ -36,12 +37,12 @@ namespace MyLicenta.FileProcessing
 
             while (!reader.EndOfStream)
             {
-                var line = reader.ReadLine();
-                var values = line.Split(',');
+                string line = reader.ReadLine();
+                string[] values = line.Split(',');
 
                 if (firstIteration)
                 {
-                    foreach (var value in values)
+                    foreach (string value in values)
                     {
                         if (!value.Equals("prognosis"))
                             symptomsList.Add(value);
@@ -54,7 +55,7 @@ namespace MyLicenta.FileProcessing
                 firstIteration = false;
             }
 
-            foreach (var disease in diseaseList)
+            foreach (string disease in diseaseList)
             {
                 _context.Diseases.Add(new Disease
                 {
@@ -65,7 +66,7 @@ namespace MyLicenta.FileProcessing
                 _context.SaveChanges();
             }
 
-            foreach (var symptom in symptomsList)
+            foreach (string symptom in symptomsList)
             {
                 _context.Symptoms.Add(new Symptom
                 {
@@ -82,17 +83,17 @@ namespace MyLicenta.FileProcessing
             IList<Symptom> symptoms = _context.Symptoms.ToList();
             IList<SymptomDisease> symptomDiseases = new List<SymptomDisease>();
 
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using StreamReader reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
             reader.ReadLine();
 
             while (!reader.EndOfStream)
             {
-                var line = reader.ReadLine();
-                var values = line.Split(',');
+                string line = reader.ReadLine();
+                string[] values = line.Split(',');
 
-                var diseaseName = values[^1];
+                string diseaseName = values[^1];
 
-                var diseaseID = diseases
+                int diseaseID = diseases
                     .Where(disease => disease.DiseaseName.Equals(diseaseName)).First().Id;
 
                 for (int index = 0; index < values.Length - 1; index += 1)
@@ -105,7 +106,7 @@ namespace MyLicenta.FileProcessing
                             DiseaseID = diseaseID,
                             SymptomID = symptomID
                         };
-                        
+
                         if (!symptomDiseases.Contains(symptomDisease))
                         {
                             symptomDiseases.Add(symptomDisease);
@@ -114,7 +115,7 @@ namespace MyLicenta.FileProcessing
                 }
             }
 
-            foreach(var symDys in symptomDiseases)
+            foreach (SymptomDisease symDys in symptomDiseases)
             {
                 _context.SymptomDiseases.Add(symDys);
                 _context.SaveChanges();
@@ -124,7 +125,7 @@ namespace MyLicenta.FileProcessing
         public void DeduceDiseaseProbabilities()
         {
 
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using StreamReader reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
             reader.ReadLine();
 
             int numberOfLines = 0;
@@ -133,10 +134,10 @@ namespace MyLicenta.FileProcessing
 
             while (!reader.EndOfStream)
             {
-                var line = reader.ReadLine();
-                var values = line.Split(',');
+                string line = reader.ReadLine();
+                string[] values = line.Split(',');
 
-                var diseaseName = values[^1];
+                string diseaseName = values[^1];
                 if (!diseaseFrequence.ContainsKey(diseaseName))
                 {
                     diseaseFrequence.Add(diseaseName, 1d);
@@ -148,10 +149,10 @@ namespace MyLicenta.FileProcessing
                 numberOfLines += 1;
             }
 
-            foreach(var key in diseaseFrequence.Keys)
+            foreach (string key in diseaseFrequence.Keys)
             {
-                var disease = _context.Diseases.Where(disease => disease.DiseaseName.Equals(key)).First();
-                
+                Disease disease = _context.Diseases.Where(disease => disease.DiseaseName.Equals(key)).First();
+
                 disease.GeneralProbability = diseaseFrequence[key] / numberOfLines;
                 _context.SaveChanges();
             }
@@ -159,7 +160,7 @@ namespace MyLicenta.FileProcessing
 
         public void DeduceSymptomsProbabilities()
         {
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using StreamReader reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
             reader.ReadLine();
 
             int numberOfLines = 0;
@@ -167,9 +168,9 @@ namespace MyLicenta.FileProcessing
 
             while (!reader.EndOfStream)
             {
-                var line = reader.ReadLine();
-                var values = line.Split(',');
-                for(int index = 0; index < values.Length-1; index += 1)
+                string line = reader.ReadLine();
+                string[] values = line.Split(',');
+                for (int index = 0; index < values.Length - 1; index += 1)
                 {
                     if (values[index].Equals("1"))
                     {
@@ -186,9 +187,9 @@ namespace MyLicenta.FileProcessing
                 numberOfLines += 1;
             }
 
-            foreach (var key in symptomFrequence.Keys)
+            foreach (int key in symptomFrequence.Keys)
             {
-                var symptom = _context.Symptoms.Where(sympt => sympt.Id.Equals(key+1)).First();
+                Symptom symptom = _context.Symptoms.Where(sympt => sympt.Id.Equals(key + 1)).First();
 
                 symptom.OccurenceProbability = symptomFrequence[key] / numberOfLines;
                 _context.SaveChanges();
@@ -197,25 +198,25 @@ namespace MyLicenta.FileProcessing
 
         public void DeduceCoocurrenceProbability()
         {
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using StreamReader reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
             reader.ReadLine();
 
             IList<Disease> diseases = _context.Diseases.ToList();
             IDictionary<string, double[]> symDisFrequence = new Dictionary<string, double[]>();
 
-            foreach(var disease in diseases)
+            foreach (Disease disease in diseases)
             {
                 symDisFrequence.Add(disease.DiseaseName, new double[132]);
             }
 
             while (!reader.EndOfStream)
             {
-                var line = reader.ReadLine();
-                var values = line.Split(',');
+                string line = reader.ReadLine();
+                string[] values = line.Split(',');
 
                 string diseaseName = values[^1];
 
-                for(int index = 0; index < values.Length - 1; index += 1)
+                for (int index = 0; index < values.Length - 1; index += 1)
                 {
                     if (values[index].Equals("1"))
                     {
@@ -223,16 +224,62 @@ namespace MyLicenta.FileProcessing
                     }
                 }
             }
-            
-            foreach(var key in symDisFrequence.Keys)
+
+            foreach (string key in symDisFrequence.Keys)
             {
-                var diseaseID = _context.Diseases.Where(dis => dis.DiseaseName.Equals(key)).First().Id;
-                for(int index = 0; index<symDisFrequence[key].Length; index += 1)
+                int diseaseID = _context.Diseases.Where(dis => dis.DiseaseName.Equals(key)).First().Id;
+                for (int index = 0; index < symDisFrequence[key].Length; index += 1)
                 {
-                    if(symDisFrequence[key][index] > 0d)
+                    if (symDisFrequence[key][index] > 0d)
                     {
-                        var symDis = _context.SymptomDiseases.Where(disSym => disSym.DiseaseID == diseaseID && disSym.SymptomID == (index + 1)).First();
+                        SymptomDisease symDis = _context.SymptomDiseases.Where(disSym => disSym.DiseaseID == diseaseID && disSym.SymptomID == (index + 1)).First();
                         symDis.OccurenceProbability = symDisFrequence[key][index] / NumberOfCases(key);
+                        _context.SaveChanges();
+                    }
+                }
+            }
+        }
+
+        public void SymptomsConditionedProbability()
+        {
+            using StreamReader reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            reader.ReadLine();
+
+            int numberOfSymptoms = _context.Symptoms.Count();
+            int numberOfDiseases = _context.Diseases.Count();
+            IDictionary<int, double[]> symDisFrequence = new Dictionary<int, double[]>();
+
+            for (int index = 0; index < numberOfSymptoms; index += 1)
+            {
+                symDisFrequence.Add(index + 1, new double[numberOfDiseases]);
+            }
+
+            while (!reader.EndOfStream)
+            {
+                string line = reader.ReadLine();
+                string[] values = line.Split(",");
+
+                string diseaseName = values[^1];
+                int diseaseID = _context.Diseases.Where(dis => dis.DiseaseName.Equals(diseaseName)).First().Id;
+
+                for (int index = 0; index < values.Length - 1; index += 1)
+                {
+                    if (values[index].Equals("1"))
+                    {
+                        symDisFrequence[index + 1][diseaseID - 1] += 1d;
+                    }
+                }
+            }
+
+            foreach (int key in symDisFrequence.Keys)
+            {
+                double totalCases = NumberOfCases(symDisFrequence[key]);
+                for(int index = 0; index < symDisFrequence[key].Length; index += 1)
+                {
+                    if(symDisFrequence[key][index] > 0)
+                    {
+                        SymptomDisease symptomDisease = _context.SymptomDiseases.Where(symDis => symDis.DiseaseID == index + 1 && symDis.SymptomID == key).First();
+                        symptomDisease.OccurenceProbability = symDisFrequence[key][index] / totalCases;
                         _context.SaveChanges();
                     }
                 }
@@ -242,12 +289,12 @@ namespace MyLicenta.FileProcessing
         private double NumberOfCases(string key)
         {
             double cases = 0d;
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using StreamReader reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
             reader.ReadLine();
             while (!reader.EndOfStream)
             {
-                var line = reader.ReadLine();
-                var values = line.Split(',');
+                string line = reader.ReadLine();
+                string[] values = line.Split(',');
 
                 string diseaseName = values[^1];
                 if (diseaseName.Equals(key))
@@ -255,7 +302,17 @@ namespace MyLicenta.FileProcessing
                     cases += 1d;
                 }
             }
-                return cases;
+            return cases;
+        }
+
+        private double NumberOfCases(double[] cases)
+        {
+            double sum = 0d;
+            foreach(double num in cases)
+            {
+                sum += num;
+            }
+            return sum; 
         }
     }
 }

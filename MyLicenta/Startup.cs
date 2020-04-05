@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MyLicenta.DataMining;
+using MyLicenta.DataMining.Algorithms;
+using MyLicenta.DataMining.PerformanceMetrics;
 using MyLicenta.FileProcessing;
 using MyLicenta.Models;
 
@@ -32,11 +34,20 @@ namespace MyLicenta
             string connectionString = Configuration.GetConnectionString("DefaultConnection");
             services.AddDbContext<MedicalDBContext>(opt => opt.UseSqlServer(connectionString));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+
             services.AddControllers();
+            services.AddCors();
+
             services.AddScoped<IFileParser, FileParser>();
             services.AddScoped<IApriori, Apriori>();
             services.AddScoped<IKMeans, KMeans>();
+            services.AddScoped<IKNearestNeighbors, KNearestNeighbors>();
             services.AddScoped<INaiveBayes, NaiveBayes>();
+            services.AddScoped<IAprioriTest, AprioriTest>();
+            services.AddScoped<IKMeansTest, KMeansTest>();
+            services.AddScoped<IKNearestNeighborsTest, KNearestNeighborsTest>();
+            services.AddScoped<INaiveBayesTest, NaiveBayesTest>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,8 +61,6 @@ namespace MyLicenta
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
-            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
