@@ -32,7 +32,7 @@ namespace MyLicenta.Controllers
         [HttpGet]
         public string Get()
         {
-            return "alabama";
+            return "";
         }
     }
 }

@@ -24,7 +24,7 @@ namespace MyLicenta.DataMining.PerformanceMetrics
 
         public double AprioriAccuracy()
         {
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using var reader = new StreamReader("./FileProcessing/Datasets/Testing.csv");
             var s = reader.ReadLine();
 
             double numberOfMatches = 0d;
@@ -47,8 +47,10 @@ namespace MyLicenta.DataMining.PerformanceMetrics
                 }
 
                 var dictionary = _apriori.AssociateDiseases(symptoms).OrderByDescending(i => i.Value);
-                if (dictionary.ElementAt(0).Key.Equals(values[^1]))
-                    numberOfMatches += 1;
+                if(dictionary.Count() > 0)
+                    if (dictionary.ElementAt(0).Key.Equals(values[^1]))
+                        numberOfMatches += 1;
+                
             }
 
             return numberOfMatches;

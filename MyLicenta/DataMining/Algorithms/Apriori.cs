@@ -52,10 +52,11 @@ namespace MyLicenta.DataMining
             foreach(Disease disease in diseases)
             {
                 double likelihood = DetermineLikelihood(disease, setOfSymptoms);
-                predictedDiseases.Add(disease.DiseaseName, likelihood);
+                if(likelihood != 0)
+                    predictedDiseases.Add(disease.DiseaseName, 1/likelihood);
             }
 
-            return predictedDiseases;
+            return predictedDiseases.OrderByDescending(pair => pair.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
         private double DetermineLikelihood(Disease disease, ISet<int> setOfSymptoms)
@@ -70,22 +71,22 @@ namespace MyLicenta.DataMining
                 {
                     if (setOfSymptoms.SetEquals(items))
                     {
-                        return searchingItemsets.SetsFrequency[items];
+                        likelihood = searchingItemsets.SetsFrequency[items];
                     }
                 }
             }
 
-            if (likelihood == 0d)
-            {
-                ISet<int> diseaseSymptoms = _context.SymptomDiseases.Where(symDis => symDis.DiseaseID == disease.Id)
-                        .Select(symDis => symDis.SymptomID).ToHashSet();
+            ISet<int> diseaseSymptoms = _context.SymptomDiseases.Where(symDis => symDis.DiseaseID == disease.Id)
+                                           .Select(symDis => symDis.SymptomID).ToHashSet();
 
+            if(likelihood == 0d)
+            {
                 if (setOfSymptoms.IsSubsetOf(diseaseSymptoms) || setOfSymptoms.SetEquals(diseaseSymptoms))
                 {
-                    return 1d;
+                    likelihood = 1;
                 }
             }
-            
+
             return likelihood;
         }
 

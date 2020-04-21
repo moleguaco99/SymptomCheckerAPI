@@ -37,6 +37,7 @@ namespace MyLicenta
 
             services.AddControllers();
             services.AddCors();
+            services.AddControllers().AddNewtonsoftJson();
 
             services.AddScoped<IFileParser, FileParser>();
             services.AddScoped<IApriori, Apriori>();
@@ -61,6 +62,8 @@ namespace MyLicenta
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors();
 
             app.UseEndpoints(endpoints =>
             {

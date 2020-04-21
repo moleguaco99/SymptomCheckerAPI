@@ -23,13 +23,25 @@ namespace MyLicenta.DataMining
             IDictionary<string, double> diseaseProbabilities = new Dictionary<string, double>();
             IList<Disease> diseases = _context.Diseases.ToList();
 
+            double sum = 0d;
+
             foreach (Disease disease in diseases)
             {
-                double conditionedDiseaseProbability = ConditionedSymptomsProbability(disease, symptoms) * DiseaseGeneralProbability(disease);
+                double conditionedDiseaseProbability = ConditionedSymptomsProbability(disease, symptoms);
                 double conditionedDiseaseRefusal = ConditionedSymptomsRefusal(disease, symptoms) * (1d - DiseaseGeneralProbability(disease));
                 double symptomsIntersection = 1 / (conditionedDiseaseProbability + conditionedDiseaseRefusal);
+                double predictedProbability = conditionedDiseaseProbability * symptomsIntersection;
 
-                diseaseProbabilities.Add(disease.DiseaseName, conditionedDiseaseProbability * symptomsIntersection);
+                if (!double.IsNaN(predictedProbability) && predictedProbability > 0)
+                {
+                    diseaseProbabilities.Add(disease.DiseaseName, predictedProbability);
+                    sum += predictedProbability;
+                }
+            }
+
+            foreach(string disease in diseaseProbabilities.Keys.ToList())
+            {
+                diseaseProbabilities[disease] = diseaseProbabilities[disease] /  sum;
             }
 
             return diseaseProbabilities;
@@ -45,11 +57,11 @@ namespace MyLicenta.DataMining
                 if (symptom.Equals(""))
                     continue;
 
-                int symptomID = _context.Symptoms.Where(sym => sym.SymptomName.Equals(symptom)).First().Id;
-                SymptomDisease symptomDisease = _context.SymptomDiseases.Where(symDis => symDis.DiseaseID.Equals(disease.Id) && symDis.SymptomID.Equals(symptomID)).FirstOrDefault();
+                Symptom symptomX = _context.Symptoms.Where(sym => sym.SymptomName.Equals(symptom)).First();
+                SymptomDisease symptomDisease = _context.SymptomDiseases.Where(symDis => symDis.DiseaseID.Equals(disease.Id) && symDis.SymptomID.Equals(symptomX.Id)).FirstOrDefault();
                 if (symptomDisease != null)
                 {
-                    symptomsProbability *= (1d - symptomDisease.OccurenceProbability);
+                    symptomsProbability *= (symptomX.OccurenceProbability - symptomDisease.OccurenceProbability * disease.GeneralProbability) / (1d - DiseaseGeneralProbability(disease));
                 }
                 else
                     return 0d;

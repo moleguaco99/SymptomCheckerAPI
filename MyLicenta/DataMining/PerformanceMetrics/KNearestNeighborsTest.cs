@@ -25,7 +25,7 @@ namespace MyLicenta.DataMining.PerformanceMetrics
 
         public double KNearestNeighborsAccuracy()
         {
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using var reader = new StreamReader("./FileProcessing/Datasets/Testing.csv");
             var s = reader.ReadLine();
 
             double numberOfMatches = 0d;

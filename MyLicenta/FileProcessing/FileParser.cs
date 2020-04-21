@@ -247,6 +247,7 @@ namespace MyLicenta.FileProcessing
 
             int numberOfSymptoms = _context.Symptoms.Count();
             int numberOfDiseases = _context.Diseases.Count();
+            double numberOfLines = 0d;
             IDictionary<int, double[]> symDisFrequence = new Dictionary<int, double[]>();
 
             for (int index = 0; index < numberOfSymptoms; index += 1)
@@ -254,10 +255,12 @@ namespace MyLicenta.FileProcessing
                 symDisFrequence.Add(index + 1, new double[numberOfDiseases]);
             }
 
+
             while (!reader.EndOfStream)
             {
                 string line = reader.ReadLine();
                 string[] values = line.Split(",");
+                numberOfLines += 1;
 
                 string diseaseName = values[^1];
                 int diseaseID = _context.Diseases.Where(dis => dis.DiseaseName.Equals(diseaseName)).First().Id;
@@ -279,7 +282,7 @@ namespace MyLicenta.FileProcessing
                     if(symDisFrequence[key][index] > 0)
                     {
                         SymptomDisease symptomDisease = _context.SymptomDiseases.Where(symDis => symDis.DiseaseID == index + 1 && symDis.SymptomID == key).First();
-                        symptomDisease.OccurenceProbability = symDisFrequence[key][index] / totalCases;
+                        symptomDisease.OccurenceProbability = symDisFrequence[key][index] / numberOfLines;
                         _context.SaveChanges();
                     }
                 }
