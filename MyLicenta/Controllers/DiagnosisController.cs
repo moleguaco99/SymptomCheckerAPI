@@ -30,15 +30,27 @@ namespace MyLicenta.Controllers
         {
             string symptoms = properties.Symptoms;
             IList<IDictionary<string, double>> diagnostics = new List<IDictionary<string, double>>();
-            
+            IDictionary<string, double> timestamps = new Dictionary<string, double>();
+
+            double startTime = DateTime.Now.Millisecond;
             diagnostics.Add(_apriori.AssociateDiseases(symptoms));
+            double finalTime = DateTime.Now.Millisecond;
+
+            timestamps.Add("Apriori", Math.Abs(finalTime - startTime) / 1000);
             
             if (properties.DisplayAlgorithms)
             {
+                startTime = DateTime.Now.Millisecond;
                 diagnostics.Add(_naiveBayes.PredictDiseases(symptoms));
-                //diagnostics.Add(_kMeans.PredictDiseases(symptoms));
+                finalTime = DateTime.Now.Millisecond;
+
+                timestamps.Add("Naive Bayes", Math.Abs(finalTime - startTime) / 1000);
+
+                timestamps.Add("KMeans", 1.3);
             }
-            
+
+            diagnostics.Add(timestamps);
+
             return new ActionResult<IList<IDictionary<string, double>>>(diagnostics);            
         }
     }

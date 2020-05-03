@@ -29,7 +29,18 @@ namespace MyLicenta.DataMining
             numberOfCentroids = context.Diseases.Count();
 
             GetDataPoints();
-            AssignCentroids();
+            while (true)
+            {
+                try
+                {
+                    AssignCentroids();
+                    break;
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+            }
             TrainCentroids();
         }
 
