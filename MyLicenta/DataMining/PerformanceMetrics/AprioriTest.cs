@@ -9,10 +9,12 @@ namespace MyLicenta.DataMining.PerformanceMetrics
 {
     public interface IAprioriTest
     {
-        public double AprioriAccuracy();
+        public KeyValuePair<double, IDictionary<string, InformationRetrieval>> AprioriMetrics();
     }
     public class AprioriTest : IAprioriTest
     {
+        IDictionary<string, InformationRetrieval> _performanceMeter;
+
         private readonly MedicalDBContext _context;
         private IApriori _apriori;
 
@@ -20,11 +22,24 @@ namespace MyLicenta.DataMining.PerformanceMetrics
         {
             _context = context;
             _apriori = apriori;
+            _performanceMeter = new Dictionary<string, InformationRetrieval>();
+
+            InitializeMeter();
         }
 
-        public double AprioriAccuracy()
+        private void InitializeMeter()
         {
-            using var reader = new StreamReader("./FileProcessing/Datasets/Testing.csv");
+            IList<Disease> diseases = _context.Diseases.ToList();
+
+            foreach(Disease disease in diseases)
+            {
+                _performanceMeter.Add(disease.DiseaseName, new InformationRetrieval());
+            }
+        }
+
+        public KeyValuePair<double, IDictionary<string, InformationRetrieval>> AprioriMetrics()
+        {
+            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
             var s = reader.ReadLine();
 
             double numberOfMatches = 0d;
@@ -33,9 +48,12 @@ namespace MyLicenta.DataMining.PerformanceMetrics
             while (!reader.EndOfStream)
             {
                 numberOfLines += 1;
+
                 var line = reader.ReadLine();
                 var values = line.Split(',');
+
                 string symptoms = "";
+                string disease = values[^1];
 
                 for (int index = 0; index < values.Length; index += 1)
                 {
@@ -46,14 +64,28 @@ namespace MyLicenta.DataMining.PerformanceMetrics
                     }
                 }
 
-                var dictionary = _apriori.AssociateDiseases(symptoms).OrderByDescending(i => i.Value);
-                if(dictionary.Count() > 0)
-                    if (dictionary.ElementAt(0).Key.Equals(values[^1]))
+                var differentialDiagnosis = _apriori.AssociateDiseases(symptoms).OrderByDescending(i => i.Value);
+
+                if(differentialDiagnosis.Count() > 0)
+                {
+                    if (differentialDiagnosis.ElementAt(0).Key.Equals(disease))
+                    {
                         numberOfMatches += 1;
-                
+                        _performanceMeter[disease].TruePositive += 1;
+                    }
+                    else
+                    {
+                        _performanceMeter[differentialDiagnosis.ElementAt(0).Key].FalsePositive += 1;
+                        _performanceMeter[disease].FalseNegative += 1;
+                    }
+                }
+                else
+                {
+                    _performanceMeter[disease].FalseNegative += 1;
+                }
             }
 
-            return numberOfMatches;
+            return new KeyValuePair<double, IDictionary<string, InformationRetrieval>>(numberOfMatches, _performanceMeter);
         }
     }
 }

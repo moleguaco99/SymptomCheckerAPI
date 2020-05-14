@@ -18,30 +18,25 @@ namespace MyLicenta.DataMining
         private readonly int spaceDimension;
         private readonly int numberOfCentroids;
 
-        private IDictionary<string, double[]> centroids;
-        private IDictionary<string, double[]> oldCentroids;
-        private IList<KeyValuePair<string,double[]>> _dataPoints;
+        private IList<double[]> centroids;
+        private IList<double[]> oldCentroids;
+
+        private IList<KeyValuePair<string, double[]>> _dataPoints;
+        private IDictionary<int, IList<int>> correspondingPoints;
         
+        private IDictionary<string, double[]> clusters;
+
         public KMeans(MedicalDBContext context)
         {
             _context = context;
             spaceDimension = context.Symptoms.Count();
             numberOfCentroids = context.Diseases.Count();
+            clusters = new Dictionary<string, double[]>();
 
             GetDataPoints();
-            while (true)
-            {
-                try
-                {
-                    AssignCentroids();
-                    break;
-                }
-                catch(Exception e)
-                {
-                    Console.WriteLine(e.ToString());
-                }
-            }
+            InitializeCentroids();
             TrainCentroids();
+            AssignClasses();
         }
 
         private void GetDataPoints()
@@ -68,10 +63,10 @@ namespace MyLicenta.DataMining
             }
         }
 
-        private void AssignCentroids()
+        private void InitializeCentroids()
         {
-            centroids = new Dictionary<string, double[]>();
-            oldCentroids = new Dictionary<string, double[]>();
+            centroids = new List<double[]>();
+            oldCentroids = new List<double[]>();
 
             double[] distanceToClosestCentroid = new double[_dataPoints.Count()];
             double[] weightedDistribution = new double[_dataPoints.Count()];
@@ -89,7 +84,7 @@ namespace MyLicenta.DataMining
                 {
                     for(int point = 0; point < _dataPoints.Count(); point += 1)
                     {
-                        double tempDistance = EuclideanDistance(centroids.ElementAt(centroid-1).Value, _dataPoints.ElementAt(point).Value);
+                        double tempDistance = EuclideanDistance(centroids.ElementAt(centroid - 1), _dataPoints.ElementAt(point).Value);
 
                         if(centroid == 1)
                         {
@@ -119,8 +114,6 @@ namespace MyLicenta.DataMining
                         if(probability > weightedDistribution[nextCentroid - 1] / weightedDistribution[_dataPoints.Count() - 1])
                         {
                             choose = nextCentroid;
-                            if(!centroids.ContainsKey(_dataPoints.ElementAt(choose).Key))
-                                break;
                         }
                         else
                         {
@@ -129,116 +122,155 @@ namespace MyLicenta.DataMining
                     }
                 }
 
-                centroids.Add(_dataPoints.ElementAt(choose).Key, _dataPoints.ElementAt(choose).Value);
+                centroids.Add(_dataPoints.ElementAt(choose).Value);
             }
         }
-       
+
         private void TrainCentroids()
         {
+            Random random = new Random();
+            int maxNumberIterations = 500, iterationCounter = 0;
 
-            IList<string> diseases = _context.Diseases.Select(disease => disease.DiseaseName).ToList();
-            foreach(string disease in diseases)
+            for(int index = 0; index < numberOfCentroids; index += 1)
             {
-                oldCentroids.Add(disease, new double[spaceDimension]);
+                oldCentroids.Add(new double[spaceDimension]);
             }
-
-            while (CentroidsUpdated())
+            
+            while (CentroidsUpdated() || iterationCounter < maxNumberIterations)
             {
-                IDictionary<string, IList<double[]>> dataPoints = new Dictionary<string, IList<double[]>>();
+                iterationCounter += 1;
+                correspondingPoints = new Dictionary<int, IList<int>>();
 
-                foreach(string disease in diseases)
+                for(int index = 0; index < numberOfCentroids; index += 1)
                 {
-                    dataPoints.Add(disease, new List<double[]>());
-                    oldCentroids[disease] = centroids[disease].ToArray();
+                    oldCentroids[index] = centroids[index].ToArray();
+                    correspondingPoints.Add(index, new List<int>());
                 }
 
-                StreamReader reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
-                reader.ReadLine();
-                
-                while (!reader.EndOfStream)
+                for(int index = 0; index < _dataPoints.Count(); index += 1)
                 {
-                    string line = reader.ReadLine();
-                    string[] trainingSymptoms = line.Split(",");
-                    string diseaseName = "";
+                    int minCentroid = int.MaxValue;
                     double minDistance = double.MaxValue;
 
-                    double[] dataPoint = new double[spaceDimension];
-
-                    for (int index = 0; index < spaceDimension - 1; index += 1)
+                    for(int centroidIndex = 0; centroidIndex < numberOfCentroids; centroidIndex += 1)
                     {
-                        if (trainingSymptoms[index].Equals("1"))
-                            dataPoint[index] = 1d;
-                    }
-
-                    foreach(string label in centroids.Keys)
-                    {
-                        double[] X = centroids[label];
-                        double distance = 0d;
-
-                        for (int feature = 0; feature < spaceDimension; feature += 1)
+                        double distance = EuclideanDistance(centroids[centroidIndex], _dataPoints[index].Value);
+                        if(distance <= minDistance)
                         {
-                            double difference = Math.Abs(dataPoint[feature] - X[feature]);
-                            distance += Math.Pow(difference, 2);
-                        }
-
-                        if (distance < minDistance)
-                        {
+                            minCentroid = centroidIndex;
                             minDistance = distance;
-                            diseaseName = label;
                         }
                     }
 
-                    dataPoints[diseaseName].Add(dataPoint);
+                    correspondingPoints[minCentroid].Add(index);
                 }
 
-                foreach(string label in dataPoints.Keys)
+                for(int centroidIndex = 0; centroidIndex < numberOfCentroids; centroidIndex += 1)
                 {
-                    IList<double[]> points = dataPoints[label];
-                    double[] centroid = new double[spaceDimension];
-
-                    foreach(double[] point in points)
+                    if(correspondingPoints[centroidIndex].Count() == 0)
                     {
-                        for(int index = 0; index < spaceDimension; index += 1)
+                        centroids[centroidIndex] = _dataPoints.ElementAt(random.Next(_dataPoints.Count())).Value;
+                    }
+                    else
+                    {
+                        IList<int> points = correspondingPoints[centroidIndex];
+                        double numberOfPoints = points.Count();
+                        double[] meanCentroid = new double[spaceDimension];
+
+                        foreach(int point in points)
                         {
-                            centroid[index] += point[index] / points.Count();
+                            double[] pointCoordinates = _dataPoints[point].Value;
+                            for(int index = 0; index < spaceDimension; index += 1)
+                            {
+                                meanCentroid[index] += pointCoordinates[index] / numberOfPoints;
+                            }
                         }
                     }
+                }
+            }
+        }
+
+        private void AssignClasses()
+        {
+            for(int centroidIndex = 0; centroidIndex < numberOfCentroids; centroidIndex += 1)
+            {
+                IList<string> classes = new List<string>();
+                IList<int> containedPoints = correspondingPoints[centroidIndex];
+                if (containedPoints.Count() == 0)
+                    break;
+                foreach(int point in containedPoints)
+                {
+                    classes.Add(_dataPoints.ElementAt(point).Key);
+                }
+
+                string cluster = classes.GroupBy(i => i).OrderByDescending(grp => grp.Count())
+                                .Select(grp => grp.Key).First();
+
+                if (!clusters.ContainsKey(cluster))
+                {
+                    clusters.Add(cluster, centroids[centroidIndex]);
+                }
+            }
+
+            IList<Disease> diseases = _context.Diseases.ToList();
+            
+            foreach(Disease disease in diseases)
+            {
+                if (!clusters.ContainsKey(disease.DiseaseName))
+                {
+                    double[] centroid = _dataPoints.Where(pair => pair.Key.Equals(disease.DiseaseName)).First().Value;
+                    clusters.Add(disease.DiseaseName, centroid);
                 }
             }
         }
 
         private bool CentroidsUpdated()
         {
-            foreach(string key in centroids.Keys)
+            for (int index = 0; index < numberOfCentroids; index += 1)
             {
-                if (centroids[key].Except(oldCentroids[key]).Count() != 0)
+                if (centroids[index].Except(oldCentroids[index]).Count() != 0)
                     return true;
             }
+
             return false;
         }
+
+
+        public double EuclideanDistance(double[] X, double[] Y)
+        {
+            double distance = 0d;
+            for (int feature = 0; feature < spaceDimension; feature += 1)
+            {
+                double difference = Math.Abs(Y[feature] - X[feature]);
+                distance += Math.Pow(difference, 2);
+            }
+
+            return Math.Pow(distance, 1d / 2);
+        }
+
 
         public IDictionary<string, double> PredictDiseases(string symptoms)
         {
             IDictionary<string, double> diseaseDistances = new Dictionary<string, double>();
             IList<Disease> diseases = _context.Diseases.ToList();
 
-            foreach(Disease disease in diseases)
+            foreach (Disease disease in diseases)
             {
                 diseaseDistances.Add(disease.DiseaseName, EuclideanDistance(disease, symptoms));
             }
 
-            return diseaseDistances;
+            return diseaseDistances.OrderByDescending(pair => pair.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
         public double EuclideanDistance(Disease disease, string symptoms)
         {
             int vectorDimension = _context.Symptoms.Count();
             double[] X = new double[vectorDimension];
-            double[] Y = centroids[disease.DiseaseName];
+            double[] Y = clusters[disease.DiseaseName];
 
             string[] uniqueSymptoms = symptoms.Split(";");
 
-            foreach(string symptom in uniqueSymptoms)
+            foreach (string symptom in uniqueSymptoms)
             {
                 if (symptom.Equals(""))
                     continue;
@@ -248,19 +280,7 @@ namespace MyLicenta.DataMining
             }
 
             double distance = 0d;
-            for(int feature = 0; feature < vectorDimension; feature += 1)
-            {
-                double difference = Math.Abs(Y[feature] - X[feature]);
-                distance += Math.Pow(difference, 2);
-            }
-
-            return Math.Pow(distance, 1d/2);
-        }
-
-        public double EuclideanDistance(double[] X, double[] Y)
-        {
-            double distance = 0d;
-            for (int feature = 0; feature < spaceDimension; feature += 1)
+            for (int feature = 0; feature < vectorDimension; feature += 1)
             {
                 double difference = Math.Abs(Y[feature] - X[feature]);
                 distance += Math.Pow(difference, 2);

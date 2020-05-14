@@ -17,11 +17,13 @@ namespace MyLicenta.Controllers
     {
         private readonly IApriori _apriori;
         private readonly INaiveBayes _naiveBayes;
+        private readonly IKMeans _kMeans;
 
-        public DiagnosisController(IApriori apriori, INaiveBayes naiveBayes)
+        public DiagnosisController(IApriori apriori, INaiveBayes naiveBayes, IKMeans kMeans)
         {
             _apriori = apriori;
             _naiveBayes = naiveBayes;
+            _kMeans = kMeans;
         }
 
         [AllowAnonymous]
@@ -46,7 +48,11 @@ namespace MyLicenta.Controllers
 
                 timestamps.Add("Naive Bayes", Math.Abs(finalTime - startTime) / 1000);
 
-                timestamps.Add("KMeans", 1.3);
+                startTime = DateTime.Now.Millisecond;
+                diagnostics.Add(_kMeans.PredictDiseases(symptoms));
+                finalTime = DateTime.Now.Millisecond;
+
+                timestamps.Add("KMeans", Math.Abs(finalTime - startTime) / 1000);
             }
 
             diagnostics.Add(timestamps);
