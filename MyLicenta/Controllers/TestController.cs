@@ -17,21 +17,20 @@ namespace MyLicenta.Controllers
     {
         /*
         private readonly IFileParser _parser;
-        private readonly IKMeansTest _kMeansTest;
         private readonly IKNearestNeighborsTest _kNearestNeighborsTest;
         private readonly IAprioriTest _aprioriTest;
-        */
         private readonly IKMeansTest _kMeansTest;
+        */
 
+        private readonly INaiveBayesTest _naiveBayesTest;
 
-        public TestController(IFileParser parser, INaiveBayesTest naiveBayesTest, IKMeansTest kMeansTest /*IKNearestNeighborsTest kNearestNeighborsTest,
+        public TestController(INaiveBayesTest naiveBayesTest /*IKNearestNeighborsTest kNearestNeighborsTest,
         IAprioriTest aprioriTest*/)
         {
             //_parser = parser;
-            //_naiveBayesTest = naiveBayesTest;
-            _kMeansTest = kMeansTest;
+            //_kMeansTest = kMeansTest;
             //_kNearestNeighborsTest = kNearestNeighborsTest;
-            //_naiveBayesTest = naiveBayesTest;
+            _naiveBayesTest = naiveBayesTest;
         }
 
         [HttpGet]
@@ -40,14 +39,14 @@ namespace MyLicenta.Controllers
             Stopwatch stopwatch = new Stopwatch();
 
             stopwatch.Start();
-            KeyValuePair<double, IDictionary<string, InformationRetrieval>> kMeansMetrics = _kMeansTest.KMeansMetrics();
+            KeyValuePair<double, IDictionary<string, InformationRetrieval>> naiveBayesMetrics = _naiveBayesTest.NaiveBayesMetrics();
             stopwatch.Stop();
 
             string elapsedTime = "Elapsed time: " + stopwatch.ElapsedMilliseconds + "\n";
             
-            double accuracy = kMeansMetrics.Key / 4920;
+            double accuracy = naiveBayesMetrics.Key / 542;
             string accuracyResult = "Accuracy: " + accuracy + "\n"; 
-            IDictionary<string, InformationRetrieval> multiclassMetrics = kMeansMetrics.Value;
+            IDictionary<string, InformationRetrieval> multiclassMetrics = naiveBayesMetrics.Value;
 
             double precision = 0d, recall = 0d, f1Score = 0d;
             foreach(string disease in multiclassMetrics.Keys)

@@ -255,7 +255,6 @@ namespace MyLicenta.FileProcessing
                 symDisFrequence.Add(index + 1, new double[numberOfDiseases]);
             }
 
-
             while (!reader.EndOfStream)
             {
                 string line = reader.ReadLine();
@@ -282,7 +281,7 @@ namespace MyLicenta.FileProcessing
                     if(symDisFrequence[key][index] > 0)
                     {
                         SymptomDisease symptomDisease = _context.SymptomDiseases.Where(symDis => symDis.DiseaseID == index + 1 && symDis.SymptomID == key).First();
-                        symptomDisease.OccurenceProbability = symDisFrequence[key][index] / numberOfLines;
+                        symptomDisease.OccurenceProbability = symDisFrequence[key][index] / totalCases;
                         _context.SaveChanges();
                     }
                 }

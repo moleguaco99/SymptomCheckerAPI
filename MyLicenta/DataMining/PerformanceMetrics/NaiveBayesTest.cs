@@ -38,7 +38,7 @@ namespace MyLicenta.DataMining.PerformanceMetrics
 
         public KeyValuePair<double, IDictionary<string, InformationRetrieval>> NaiveBayesMetrics()
         {
-            using var reader = new StreamReader("./FileProcessing/Datasets/Training.csv");
+            using var reader = new StreamReader("./FileProcessing/Datasets/Testing.csv");
             var s = reader.ReadLine();
 
             double numberOfMatches = 0d;
