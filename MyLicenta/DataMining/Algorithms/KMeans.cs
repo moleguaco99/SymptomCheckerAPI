@@ -129,7 +129,7 @@ namespace MyLicenta.DataMining
         private void TrainCentroids()
         {
             Random random = new Random();
-            int maxNumberIterations = 500, iterationCounter = 0;
+            int maxNumberIterations = 50, iterationCounter = 0;
 
             for(int index = 0; index < numberOfCentroids; index += 1)
             {
@@ -256,7 +256,7 @@ namespace MyLicenta.DataMining
 
             foreach (Disease disease in diseases)
             {
-                diseaseDistances.Add(disease.DiseaseName, EuclideanDistance(disease, symptoms));
+                diseaseDistances.Add(disease.DiseaseName, 1d/(1 + EuclideanDistance(disease, symptoms)));
             }
 
             return diseaseDistances.OrderByDescending(pair => pair.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
