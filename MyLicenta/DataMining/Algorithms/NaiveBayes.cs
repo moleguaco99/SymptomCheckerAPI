@@ -27,7 +27,7 @@ namespace MyLicenta.DataMining
 
             foreach (Disease disease in diseases)
             {
-                double conditionedDiseaseProbability = ConditionedSymptomsProbability(disease, symptoms);
+                double conditionedDiseaseProbability = ConditionedSymptomsProbability(disease, symptoms) * DiseaseGeneralProbability(disease);
                 double conditionedDiseaseRefusal = ConditionedSymptomsRefusal(disease, symptoms) * (1d - DiseaseGeneralProbability(disease));
                 double symptomsIntersection = 1 / (conditionedDiseaseProbability + conditionedDiseaseRefusal);
                 double predictedProbability = conditionedDiseaseProbability * symptomsIntersection;
@@ -64,7 +64,7 @@ namespace MyLicenta.DataMining
                     symptomsProbability *= (symptomX.OccurenceProbability - symptomDisease.OccurenceProbability * disease.GeneralProbability) / (1d - DiseaseGeneralProbability(disease));
                 }
                 else
-                    return 0d;
+                    symptomsProbability *= 0.98d;
             }
 
             return symptomsProbability;
@@ -74,10 +74,6 @@ namespace MyLicenta.DataMining
         {
             return disease.GeneralProbability;
         }
-
-        /*
-         * There is still the question of keeping all the symptoms, including the ones that don't occur in the diseases specification
-         */
 
         private double ConditionedSymptomsProbability(Disease disease, string symptoms)
         {
@@ -96,7 +92,7 @@ namespace MyLicenta.DataMining
                     symptomsProbability *= symptomDisease.OccurenceProbability;
                 }
                 else
-                    return 0d;
+                    symptomsProbability *= 0.02;
             }
 
             return symptomsProbability;
