@@ -28,41 +28,6 @@ namespace MyLicenta.Controllers
         public string Get()
         {
             return "";
-            /*
-            Stopwatch stopwatch = new Stopwatch();
-
-            stopwatch.Start();
-            KeyValuePair<double, IDictionary<string, InformationRetrieval>> naiveBayesMetrics = _naiveBayesTest.NaiveBayesMetrics();
-            stopwatch.Stop();
-
-            string elapsedTime = "Elapsed time: " + stopwatch.ElapsedMilliseconds + "\n";
-
-            double accuracy = naiveBayesMetrics.Key / 543;
-            string accuracyResult = "Accuracy: " + accuracy + "\n";
-            IDictionary<string, InformationRetrieval> multiclassMetrics = naiveBayesMetrics.Value;
-
-            double precision = 0d, recall = 0d, f1Score = 0d;
-            foreach (string disease in multiclassMetrics.Keys)
-            {
-                double computedPrecision = multiclassMetrics[disease].ComputePrecision();
-                if (double.IsNaN(computedPrecision))
-                {
-                    recall += multiclassMetrics[disease].ComputeRecall();
-                }
-                else
-                {
-                    precision += computedPrecision;
-                    recall += multiclassMetrics[disease].ComputeRecall();
-                    f1Score += multiclassMetrics[disease].ComputeF1Score();
-                }
-            }
-
-            string averagePrecision = "Precision: " + precision / multiclassMetrics.Count() + "\n";
-            string averageRecall = "Recall: " + recall / multiclassMetrics.Count() + "\n";
-            string averageF1Score = "F1Score: " + f1Score / multiclassMetrics.Count() + "\n";
-
-            return elapsedTime + accuracyResult + averagePrecision + averageRecall + averageF1Score;
-        */
         }
     }
 }

@@ -56,6 +56,19 @@ namespace MyLicenta.DataMining
                     predictedDiseases.Add(disease.DiseaseName, 1/likelihood);
             }
 
+            if (setOfSymptoms.Count() != 1)
+            {
+                foreach (var x in GetSubsets(setOfSymptoms, setOfSymptoms.Count() - 1))
+                {
+                    foreach (Disease disease in diseases)
+                    {
+                        double likelihood = DetermineLikelihood(disease, x.ToHashSet());
+                        if (likelihood != 0 && !predictedDiseases.ContainsKey(disease.DiseaseName))
+                            predictedDiseases.Add(disease.DiseaseName, 1 / likelihood);
+                    }
+                }
+            }
+
             return predictedDiseases.OrderByDescending(pair => pair.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
@@ -78,12 +91,18 @@ namespace MyLicenta.DataMining
 
             ISet<int> diseaseSymptoms = _context.SymptomDiseases.Where(symDis => symDis.DiseaseID == disease.Id)
                                            .Select(symDis => symDis.SymptomID).ToHashSet();
-
-            if(likelihood == 0d)
+            
+            if (likelihood == 0d)
             {
-                if (setOfSymptoms.IsSubsetOf(diseaseSymptoms) || setOfSymptoms.SetEquals(diseaseSymptoms))
+                if (setOfSymptoms.SetEquals(diseaseSymptoms) || setOfSymptoms.IsSubsetOf(diseaseSymptoms))
                 {
-                    likelihood = 1;
+                    likelihood = 1d;
+                    if (setOfSymptoms.Count() < 3)
+                        likelihood = likelihood * diseaseSymptoms.Count() / setOfSymptoms.Count();
+                }
+                else
+                {
+                    likelihood = 0d;
                 }
             }
 
@@ -193,6 +212,15 @@ namespace MyLicenta.DataMining
                     Lk.RemoveItemset(itemset.Key);
                 }
             }
+        }
+
+        public IEnumerable<IEnumerable<T>> GetSubsets<T>(IEnumerable<T> list, int len) where T : IComparable
+        {
+            if (len == 1) 
+                return list.Select(t => new T[] { t });
+            
+            return GetSubsets(list, len - 1)
+                        .SelectMany(t => list.Where(e => t.All(g => g.CompareTo(e) == -1)), (t1, t2) => t1.Concat(new T[] { t2 }));
         }
     }
 

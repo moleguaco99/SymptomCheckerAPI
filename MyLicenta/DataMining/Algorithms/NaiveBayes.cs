@@ -44,7 +44,7 @@ namespace MyLicenta.DataMining
                 diseaseProbabilities[disease] = diseaseProbabilities[disease] /  sum;
             }
 
-            return diseaseProbabilities;
+            return diseaseProbabilities.OrderByDescending(pair => pair.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
         private double ConditionedSymptomsRefusal(Disease disease, string symptoms)

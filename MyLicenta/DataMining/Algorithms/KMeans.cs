@@ -129,7 +129,7 @@ namespace MyLicenta.DataMining
         private void TrainCentroids()
         {
             Random random = new Random();
-            int maxNumberIterations = 50, iterationCounter = 0;
+            int maxNumberIterations = 100, iterationCounter = 0;
 
             for(int index = 0; index < numberOfCentroids; index += 1)
             {
